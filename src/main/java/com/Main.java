@@ -1,6 +1,7 @@
 package com;
 
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.net.Socket;
 import java.net.URLDecoder;
 import java.util.Date;
@@ -15,6 +16,8 @@ public class Main {
     public static int max;
     public static int min;
     public static String uid;
+    public static int send_interval;
+    public static String security_key;
 
     public static void main(String[] args) {
         try {
@@ -32,7 +35,7 @@ public class Main {
             sensorProp = new Properties();
 
 
-            System.out.println("Приложение размещено : " + AbsPath);
+            System.out.println("application location : " + AbsPath);
             FileInputStream input = new FileInputStream(AbsPath + "sensorConfig.properties");
 
             sensorProp.load(input);
@@ -40,25 +43,41 @@ public class Main {
             max = Integer.parseInt(Main.sensorProp.getProperty("MAX_VALUE"));
             min = Integer.parseInt(Main.sensorProp.getProperty("MIN_VALUE"));
             uid = Main.sensorProp.getProperty("UID");
+            send_interval = Integer.parseInt(Main.sensorProp.getProperty("SEND_INTERVAL"));
+            security_key = Main.sensorProp.getProperty("SECURITY_KEY");
 
             while (true) {
 
-                Thread.currentThread().sleep(10000);
+                Thread.currentThread().sleep(send_interval*1000);
 
-                Socket socket = new Socket("localhost", 3777);
+                try {
+                    Socket socket = new Socket("localhost", 3777);
 
-                socket.getOutputStream().write(generateMessage().getBytes());
+                    if (!security_key.equals("")) {
+                        socket.getOutputStream().write(generateMessage().getBytes());
+                    } else {
+                        socket.getOutputStream().write(uid.getBytes());
+                    }
+                    // читаем ответ
+                    byte buf[] = new byte[256 * 1024];
+                    int r = socket.getInputStream().read(buf);
+                    String data = new String(buf, 0, r);
 
-                // читаем ответ
-                byte buf[] = new byte[256 * 1024];
-                int r = socket.getInputStream().read(buf);
-                String data = new String(buf, 0, r);
-                socket.close();
-                socket = null;
-                System.gc();
+                    if (data.contains("key")){
+                        security_key = data.replace("key : ","");
+                        Main.sensorProp.setProperty("SECURITY_KEY",security_key);
+                        FileOutputStream output = new FileOutputStream(Main.AbsPath + "sensorConfig.properties");
+                        Main.sensorProp.store(output,"sensor linked");
+                    }
+                    socket.close();
+                    socket = null;
+                    System.gc();
 
-                // выводим ответ в консоль
-                System.out.println(data);
+                    // выводим ответ в консоль
+                    System.out.println(data);
+                } catch (Exception e1){
+                    System.out.println("Bridge is not available");
+                }
             }
 
         } catch(Exception e) {
