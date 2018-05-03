@@ -29,8 +29,10 @@ public class Main {
                     .getPath();
             String decodedPath = URLDecoder.decode(path, "UTF-8");
 
+            //System.out.println("decodedPath : " + decodedPath);
+
             AbsPath = decodedPath
-                    .replace("sensorEmu-1.0.jar", "");
+                    .replace("sensorEmu-1.0.jar", "").replace("classes/","");
 
             sensorProp = new Properties();
 
