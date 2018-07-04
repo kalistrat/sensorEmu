@@ -18,6 +18,7 @@ public class Main {
     public static String uid;
     public static int send_interval;
     public static String security_key;
+    public static int uart_port;
 
     public static void main(String[] args) {
         try {
@@ -47,13 +48,14 @@ public class Main {
             uid = Main.sensorProp.getProperty("UID");
             send_interval = Integer.parseInt(Main.sensorProp.getProperty("SEND_INTERVAL"));
             security_key = Main.sensorProp.getProperty("SECURITY_KEY");
+            uart_port = Integer.parseInt(Main.sensorProp.getProperty("UART_PORT"));
 
             while (true) {
 
                 Thread.currentThread().sleep(send_interval*1000);
 
                 try {
-                    Socket socket = new Socket("localhost", 3777);
+                    Socket socket = new Socket("localhost", uart_port);
 
                     if (!security_key.equals("")) {
                         socket.getOutputStream().write(generateMessage().getBytes());
